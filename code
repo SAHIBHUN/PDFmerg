@@ -1,0 +1,73 @@
+import os
+from tkinter import *
+from tkinter import filedialog, messagebox
+from PIL import Image
+
+def select_images():
+    files = filedialog.askopenfilenames(
+        title="Select Images",
+        filetypes=[("Image Files", "*.png *.jpg *.jpeg *.webp *.bmp")]
+    )
+    if files:
+        image_list.clear()
+        image_list.extend(files)
+        listbox.delete(0, END)
+        for f in files:
+            listbox.insert(END, os.path.basename(f))
+
+def select_folder():
+    folder = filedialog.askdirectory(title="Select Folder")
+    if folder:
+        folder_path.set(folder)
+
+def convert_to_pdf():
+    if not image_list:
+        messagebox.showerror("Error", "No images selected!")
+        return
+
+    output = filedialog.asksaveasfilename(
+        title="Save PDF As",
+        defaultextension=".pdf",
+        filetypes=[("PDF File", "*.pdf")]
+    )
+
+    if not output:
+        return
+
+    images = []
+    for path in image_list:
+        img = Image.open(path)
+        if img.mode in ("RGBA", "LA"):
+            bg = Image.new("RGB", img.size, (255, 255, 255))
+            bg.paste(img, mask=img.split()[-1])
+            img = bg
+        else:
+            img = img.convert("RGB")
+        images.append(img)
+
+    first = images[0]
+    rest = images[1:]
+    first.save(output, save_all=True, append_images=rest)
+
+    messagebox.showinfo("Success", f"PDF saved as:\n{output}")
+
+# GUI Window
+root = Tk()
+root.title("Image to PDF Converter")
+root.geometry("500x450")
+root.resizable(False, False)
+
+image_list = []
+folder_path = StringVar()
+
+Label(root, text="Image to PDF Converter", font=("Arial", 16, "bold")).pack(pady=10)
+
+Button(root, text="Select Images", font=("Arial", 12), command=select_images).pack(pady=5)
+
+listbox = Listbox(root, width=60, height=10)
+listbox.pack(pady=10)
+
+Button(root, text="Convert to PDF", font=("Arial", 12), bg="green", fg="white",
+       command=convert_to_pdf).pack(pady=20)
+
+root.mainloop()
